@@ -905,6 +905,14 @@ public final class GUIUtilities {
     }
 
     /**
+     * Sets the application cursor to the system text cursor
+     * on the specified component.
+     */
+    public static void showTextCursor(final Component component) {
+        ThreadUtils.invokeAndWait(() -> GUIUtils.showTextCursor(component));
+    }
+
+    /**
      * Resets the toolbars.
      */
     public static void resetToolBar() {
