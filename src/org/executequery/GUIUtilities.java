@@ -858,6 +858,13 @@ public final class GUIUtilities {
     }
 
     /**
+     * Sets the application cursor to the system hand cursor
+     */
+    public static void showHandCursor() {
+        ThreadUtils.invokeAndWait(() -> GUIUtils.showHandCursor(frame));
+    }
+
+    /**
      * Sets the application cursor to the system wait cursor
      * on the specified component.
      */
@@ -887,6 +894,14 @@ public final class GUIUtilities {
      */
     public static void showTextCursor(final Component component) {
         ThreadUtils.invokeAndWait(() -> GUIUtils.showTextCursor(component));
+    }
+
+    /**
+     * Sets the application cursor to the system hand cursor
+     * on the specified component.
+     */
+    public static void showHandCursor(final Component component) {
+        ThreadUtils.invokeAndWait(() -> GUIUtils.showHandCursor(component));
     }
 
     /**
