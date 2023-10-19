@@ -33,6 +33,8 @@ import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.print.Printable;
 import java.util.ArrayList;
@@ -342,6 +344,8 @@ public class SQLTextArea extends RSyntaxTextArea
                     updateLineBorder();
             }
         });
+
+        addKeyListener(this);
         setEditorPreferences();
     }
 
