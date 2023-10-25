@@ -172,11 +172,8 @@ public class ErdSelectionPanel extends JPanel
             public void run() {
                 try {
                     setInProcess(true);
-                    if (source == connectionsCombo) {
-                        connectionChanged();
-                    } else if (source == schemaCombo) {
-                        schemaChanged();
-                    }
+                    connectionChanged();
+                    schemaChanged();
                 } finally {
                     setInProcess(false);
                 }

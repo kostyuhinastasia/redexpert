@@ -617,8 +617,8 @@ public class TableSelectionCombosGroup implements ItemListener {
         }
 
         ComboBoxModel model = new DynamicComboBoxModel(hosts);
-
         comboBox.setModel(model);
+
         initComboBox(comboBox);
         comboBox.setEnabled(true);
     }

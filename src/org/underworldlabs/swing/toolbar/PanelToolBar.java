@@ -22,6 +22,7 @@ package org.underworldlabs.swing.toolbar;
 
 import org.underworldlabs.swing.GUIUtils;
 import org.underworldlabs.swing.RolloverButton;
+import org.underworldlabs.swing.layouts.GridBagHelper;
 import org.underworldlabs.swing.util.IconUtilities;
 
 import javax.swing.*;
@@ -35,10 +36,18 @@ import java.awt.event.ActionListener;
  */
 public class PanelToolBar extends AbstractToolBarPanel {
 
+    private final GridBagHelper gbh;
+    private final JPanel base;
+
     public PanelToolBar() {
 
-        setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+        gbh = new GridBagHelper().anchorNorthWest();
+        base = new JPanel(new GridBagLayout());
+
+        setLayout(new GridBagLayout());
         setBorder(BorderFactory.createEmptyBorder(1, 2, 1, 1));
+        add(base, gbh.spanX().get());
+        gbh.defaults();
     }
 
     public JButton addButton(ActionListener action, String actionCommand,
@@ -56,7 +65,7 @@ public class PanelToolBar extends AbstractToolBarPanel {
         button.setActionCommand(actionCommand);
         button.addActionListener(action);
         button.setEnabled(enabled);
-        add(button);
+        base.add(button, gbh.nextCol().get());
 
         return button;
     }
@@ -76,29 +85,29 @@ public class PanelToolBar extends AbstractToolBarPanel {
 
         button.setAction(action);
         button.setText(null);
-        add(button);
+        base.add(button, gbh.nextCol().get());
 
         return button;
     }
 
     public void addSeparator() {
-        add(new PanelToolBarSeparator());
+        base.add(new PanelToolBarSeparator(), gbh.nextCol().get());
     }
 
     public void addLabel(String text) {
-        add(new JLabel(text));
+        base.add(new JLabel(text), gbh.nextCol().get());
     }
 
     public void addTextField(JTextField textField) {
-        add(textField);
+        base.add(textField, gbh.nextCol().get());
     }
 
     public void addComboBox(JComboBox comboBox) {
-        add(comboBox);
+        base.add(comboBox, gbh.nextCol().get());
     }
 
     public void addButton(JButton button) {
-        add(button);
+        base.add(button, gbh.nextCol().get());
     }
 
     private class PanelToolBarSeparator extends JLabel {
@@ -134,10 +143,3 @@ public class PanelToolBar extends AbstractToolBarPanel {
     }
 
 }
-
-
-
-
-
-
-

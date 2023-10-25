@@ -124,11 +124,7 @@ public final class EventMediator {
     }
 
     private static void handleEventExecutionException(Throwable e) {
-
-        if (Log.isDebugEnabled()) {
-
             e.printStackTrace();
-        }
     }
 
     private static <T> List<T> copyListeners(final List<T> sourceList) {
