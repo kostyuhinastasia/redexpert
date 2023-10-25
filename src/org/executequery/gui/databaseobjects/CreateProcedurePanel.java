@@ -79,7 +79,7 @@ public class CreateProcedurePanel extends CreateProcedureFunctionPanel
             DatabaseMetaData dMetaData = poolMetaData.getInner();
             IFBDatabaseMetadata db = (IFBDatabaseMetadata) DynamicLibraryLoader.loadingObjectFromClassLoader(connection.getDriverMajorVersion(), dMetaData, "FBDatabaseMetadataImpl");
 
-            fullProcedureBody = db.getProcedureSourceCode(dMetaData, this.procedure);
+            fullProcedureBody = db.getProcedureSourceCode(dMetaData, this.procedureName);
 
 
         } catch (ClassNotFoundException |
@@ -97,7 +97,7 @@ public class CreateProcedurePanel extends CreateProcedureFunctionPanel
     protected void loadParameters() {
         inputParametersPanel.clearRows();// remove first empty row
         outputParametersPanel.clearRows(); // remove first empty row
-        List<ProcedureParameter> parameters = ((DefaultDatabaseProcedure) ConnectionsTreePanel.getNamedObjectFromHost(connection, NamedObject.PROCEDURE, procedure)).getParameters();
+        List<ProcedureParameter> parameters = ((DefaultDatabaseProcedure) ConnectionsTreePanel.getNamedObjectFromHost(connection, NamedObject.PROCEDURE, procedureName)).getParameters();
         for (ProcedureParameter pp : parameters) {
             if (pp.getType() == DatabaseMetaData.procedureColumnIn)
                 inputParametersPanel.addRow(pp);
@@ -113,12 +113,6 @@ public class CreateProcedurePanel extends CreateProcedureFunctionPanel
                 "  /* PROCEDURE TEXT */\n" +
                 "  SUSPEND;\n" +
                 "END";
-    }
-
-    @Override
-    protected void generateScript() {
-        ddlTextPanel.setSQLText(generateQuery());
-
     }
 
     protected String generateQuery() {
@@ -266,7 +260,7 @@ public class CreateProcedurePanel extends CreateProcedureFunctionPanel
 
     @Override
     public void setDatabaseObject(Object databaseObject) {
-        procedure = (String) databaseObject;
+        procedureName = (String) databaseObject;
     }
 
     @Override
