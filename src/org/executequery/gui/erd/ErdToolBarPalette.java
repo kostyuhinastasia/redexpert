@@ -412,6 +412,6 @@ public class ErdToolBarPalette extends PanelToolBar
 
     @Override
     public void disconnected(ConnectionEvent connectionEvent) {
-
+        connectionModel.removeElement(connectionEvent.getDatabaseConnection());
     }
 }
