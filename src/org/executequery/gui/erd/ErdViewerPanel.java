@@ -25,6 +25,9 @@ import org.executequery.Constants;
 import org.executequery.GUIUtilities;
 import org.executequery.base.DefaultTabView;
 import org.executequery.databasemediators.DatabaseConnection;
+import org.executequery.databaseobjects.DatabaseHost;
+import org.executequery.databaseobjects.NamedObject;
+import org.executequery.databaseobjects.impl.DefaultDatabaseTable;
 import org.executequery.gui.SaveFunction;
 import org.executequery.gui.browser.ColumnConstraint;
 import org.executequery.gui.browser.ColumnData;
@@ -42,6 +45,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
@@ -56,6 +60,9 @@ public class ErdViewerPanel extends DefaultTabView
         implements PrintFunction,
         SaveFunction,
         ActiveComponent {
+
+    private static final int VERT_DIFF = 50;
+    private static final int HORIZ_DIFF = 50;
 
     /**
      * The panel's title
@@ -184,6 +191,10 @@ public class ErdViewerPanel extends DefaultTabView
     private List tableNames;
 
     private List columnData;
+
+    private int next_x = 20;
+    private int next_y = 20;
+    private int lastWidth = 0;
 
     public ErdViewerPanel(boolean showTools, boolean editable) {
         this(null, null, true, showTools, editable);
@@ -350,21 +361,6 @@ public class ErdViewerPanel extends DefaultTabView
         this.tableNames = tableNames;
         this.columnData = columnData;
 
-        // next position of component added
-        int next_x = 20;
-        int next_y = 20;
-
-        // height and width of current table
-        int height = -1;
-        int width = -1;
-
-        // width of last table
-        int lastWidth = 0;
-
-        // vertical and horizontal differences
-        int vertDiff = 50;
-        int horizDiff = 50;
-
         int size = tableNames.size();
         tables = new Vector(size);
 
@@ -376,8 +372,8 @@ public class ErdViewerPanel extends DefaultTabView
                     (ColumnData[]) columnData.get(i), this);
 
             table.setEditable(editable);
-            height = table.getHeight();
-            width = table.getWidth();
+            int height = table.getHeight();
+            int width = table.getWidth();
 
             // if it doesn't fit vertically within the
             // initial size of the view, move to a new
@@ -386,7 +382,7 @@ public class ErdViewerPanel extends DefaultTabView
                 next_y = 20;
 
                 if (i > 0)
-                    next_x += lastWidth + horizDiff;
+                    next_x += lastWidth + HORIZ_DIFF;
 
                 lastWidth = 0;
 
@@ -398,7 +394,7 @@ public class ErdViewerPanel extends DefaultTabView
 
             table.toFront();
 
-            next_y += height + vertDiff;
+            next_y += height + VERT_DIFF;
 
             if (lastWidth < width)
                 lastWidth = width;
@@ -712,7 +708,7 @@ public class ErdViewerPanel extends DefaultTabView
     /**
      * <p>Adds a new table to the canvas.
      */
-    protected boolean addNewTable(ErdTable newTable) {
+    protected boolean addNewTable(ErdTable newTable, boolean setCentered) {
 
         if (tables == null) {
             tables = new Vector();
@@ -723,10 +719,25 @@ public class ErdViewerPanel extends DefaultTabView
         }
         tables.add(newTable);
 
-        // place the new table in the center of the canvas
-        newTable.setBounds((layeredPane.getWidth() - newTable.getWidth()) / 2,
-                (layeredPane.getHeight() - newTable.getHeight()) / 2,
-                newTable.getWidth(), newTable.getHeight());
+        int width = newTable.getWidth();
+        int height = newTable.getHeight();
+
+        if (setCentered) {
+            newTable.setBounds((layeredPane.getWidth() - newTable.getWidth()) / 2,
+                    (layeredPane.getHeight() - newTable.getHeight()) / 2,
+                    width, height);
+        } else {
+
+            if (next_y + height + 20 > INITIAl_VIEW_HEIGHT) {
+                next_y = 20;
+                next_x += width + HORIZ_DIFF;
+                lastWidth = 0;
+            }
+
+            newTable.setBounds(next_x, next_y, width, height);
+
+            next_y += height + VERT_DIFF;
+        }
 
         layeredPane.add(newTable, JLayeredPane.DEFAULT_LAYER, tables.size());
         newTable.toFront();
@@ -1126,6 +1137,7 @@ public class ErdViewerPanel extends DefaultTabView
 
     }
 
+    @Override
     public void cleanup() {
 
         // -------------------------------------------------
@@ -1137,12 +1149,14 @@ public class ErdViewerPanel extends DefaultTabView
         layeredPane.clean();
 
         ErdTable[] tablesArray = getAllComponentsArray();
-
         for (int i = 0; i < tablesArray.length; i++) {
             tablesArray[i].clean();
             tablesArray[i] = null;
         }
 
+        next_y = 20;
+        next_x = 20;
+        lastWidth = 0;
     }
 
     public void showFontStyleDialog() {
@@ -1304,6 +1318,15 @@ public class ErdViewerPanel extends DefaultTabView
     }
 
     // --------------------------------------------
+
+
+    public ErdLayeredPane getLayeredPane() {
+        return layeredPane;
+    }
+
+    public ErdDependanciesPanel getDependsPanel() {
+        return dependsPanel;
+    }
 
     private static String bundleString(String key) {
         return Bundles.get(ErdViewerPanel.class, key);

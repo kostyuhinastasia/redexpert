@@ -22,8 +22,10 @@ package org.executequery.gui;
 
 import org.executequery.GUIUtilities;
 import org.executequery.components.BottomButtonPanel;
+import org.executequery.databasemediators.DatabaseConnection;
 import org.executequery.gui.erd.ErdGenerateProgressDialog;
 import org.executequery.gui.erd.ErdSelectionPanel;
+import org.executequery.gui.erd.ErdViewerPanel;
 import org.executequery.localization.Bundles;
 
 import javax.swing.*;
@@ -48,6 +50,14 @@ public class GenerateErdPanel extends JPanel
      * the parent container
      */
     private ActionContainer parent;
+    private ErdViewerPanel parentErdPanel;
+    private DatabaseConnection connection;
+
+    public GenerateErdPanel(ActionContainer parent, ErdViewerPanel parentErdPanel, DatabaseConnection connection) {
+        this(parent);
+        this.parentErdPanel = parentErdPanel;
+        this.connection = connection;
+    }
 
     public GenerateErdPanel(ActionContainer parent) {
         super(new BorderLayout());
@@ -83,7 +93,9 @@ public class GenerateErdPanel extends JPanel
 
             parent.block();
 
-        } else {
+            } else {
+                new ErdGenerateProgressDialog(selectionPanel.getSelectedValues(),
+                        parentErdPanel, connection, selectionPanel.getSchema());
 
             parent.unblock();
         }
@@ -93,15 +105,20 @@ public class GenerateErdPanel extends JPanel
 
         if (selectionPanel.hasSelections()) {
 
-            new ErdGenerateProgressDialog(selectionPanel.getDatabaseConnection(),
-                    selectionPanel.getSelectedValues(),
-                    selectionPanel.getSchema());
+            if (parentErdPanel == null) {
+                new ErdGenerateProgressDialog(selectionPanel.getDatabaseConnection(),
+                        selectionPanel.getSelectedValues(), selectionPanel.getSchema());
 
-        } else {
+            } else {
+                new ErdGenerateProgressDialog(selectionPanel.getSelectedValues(),
+                        parentErdPanel, connection, selectionPanel.getSchema());
 
+                cleanup();
+                SwingUtilities.getWindowAncestor(this).dispose();
+            }
+
+        } else
             GUIUtilities.displayErrorMessage(bundleString("SelectMoreTablesError"));
-        }
-
     }
 
     private String bundleString(String key) {

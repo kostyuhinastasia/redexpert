@@ -82,6 +82,8 @@ public class ErdGenerateProgressDialog extends AbstractBaseDialog {
      */
     private DatabaseConnection databaseConnection;
 
+    private boolean centerNewTables = false;
+
     public ErdGenerateProgressDialog(DatabaseConnection databaseConnection,
                                      Vector selectedTables, String schema) {
 
@@ -112,6 +114,26 @@ public class ErdGenerateProgressDialog extends AbstractBaseDialog {
         databaseConnection = parent.getDatabaseConnection();
         this.selectedTables = selectedTables;
         this.parent = parent;
+
+        try {
+            jbInit();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        display();
+    }
+
+    public ErdGenerateProgressDialog(Vector selectedTables, ErdViewerPanel parent, DatabaseConnection connection, String schema) {
+
+        super(GUIUtilities.getParentFrame(), "Adding Tables", false);
+
+        this.schema = schema;
+        this.databaseConnection = connection;
+        this.selectedTables = selectedTables;
+        this.parent = parent;
+
+        this.centerNewTables = false;
 
         try {
             jbInit();
@@ -258,30 +280,21 @@ public class ErdGenerateProgressDialog extends AbstractBaseDialog {
             GUIUtilities.showWaitCursor();
             metaData = null;
 
-            ErdTable table = null;
             for (int i = 0, n = selectedTables.size(); i < n; i++) {
 
                 // create the ERD display component
-                table = new ErdTable(
-                        (String) selectedTables.elementAt(i),
-                        (ColumnData[]) columnData.elementAt(i), parent);
+                ErdTable table = new ErdTable((String) selectedTables.elementAt(i), (ColumnData[]) columnData.elementAt(i), parent);
                 table.setEditable(parent.isEditable());
-                parent.addNewTable(table);
+                parent.addNewTable(table, centerNewTables);
             }
 
             parent.updateTableRelationships();
             GUIUtilities.showNormalCursor();
             selectedTables = null;
-            dispose();
 
+            dispose();
         }
 
     }
 
 }
-
-
-
-
-
-
