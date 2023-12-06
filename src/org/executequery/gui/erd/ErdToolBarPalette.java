@@ -484,7 +484,17 @@ public class ErdToolBarPalette extends PanelToolBar
         parent.removeAllTables();
         parent.cleanup();
 
-        updateFromDatabase();
+        try {
+            GUIUtilities.showWaitCursor();
+            BaseDialog dialog = new BaseDialog(GenerateErdPanel.TITLE, false);
+            dialog.addDisplayComponentWithEmptyBorder(new GenerateErdPanel(dialog, parent, getSelectedConnection()));
+            dialog.setResizable(false);
+            dialog.display();
+        } finally {
+            GUIUtilities.showNormalCursor();
+        }
+
+        parent.repaintLayeredPane();
     }
 
     private String bundleString(String key) {
