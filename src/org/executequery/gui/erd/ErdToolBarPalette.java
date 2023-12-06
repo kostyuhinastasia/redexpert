@@ -100,10 +100,10 @@ public class ErdToolBarPalette extends PanelToolBar
 
     private void jbInit() {
 
-        connectionsComboBox = WidgetFactory.createComboBox();
-        connectionModel = new DynamicComboBoxModel(new Vector<>(ConnectionManager.getActiveConnections()));
-        connectionsComboBox.setModel(connectionModel);
-        EventMediator.registerListener(this);
+        //connectionsComboBox = WidgetFactory.createComboBox();
+        //connectionModel = new DynamicComboBoxModel(new Vector<>(ConnectionManager.getActiveConnections()));
+        //connectionsComboBox.setModel(connectionModel);
+        //EventMediator.registerListener(this);
 
         //combosGroup = new TableSelectionCombosGroup(connectionsComboBox);
 
@@ -111,12 +111,12 @@ public class ErdToolBarPalette extends PanelToolBar
                 RepositoryCache.load(DatabaseConnectionRepository.REPOSITORY_ID)
         )).findAll();
 
-        connectionsComboBox = WidgetFactory.createComboBox();
+        //connectionsComboBox = WidgetFactory.createComboBox();
         for (DatabaseConnection dc : connections)
             connectionsComboBox.addItem(dc);
 
         String[] scaleValues = ErdViewerPanel.scaleValues;
-        scaleCombo = WidgetFactory.createComboBox(scaleValues);
+        //scaleCombo = WidgetFactory.createComboBox(scaleValues);
         scaleCombo.setFont(new Font("dialog", Font.PLAIN, 10));
         scaleCombo.setPreferredSize(new Dimension(58, 20));
         scaleCombo.setLightWeightPopupEnabled(false);
@@ -205,12 +205,12 @@ public class ErdToolBarPalette extends PanelToolBar
         addButton(canvasFgButton);
         addButton(canvasBgButton);
 
-        String[] scaleValues = ErdViewerPanel.scaleValues;
-        scaleCombo = WidgetFactory.createComboBox("scaleCombo", scaleValues);
-        scaleCombo.setFont(new Font("dialog", Font.PLAIN, 10));
-        scaleCombo.setPreferredSize(new Dimension(58, 20));
-        scaleCombo.setLightWeightPopupEnabled(false);
-        scaleCombo.setSelectedIndex(3);
+        //String[] scaleValues = ErdViewerPanel.scaleValues;
+        //scaleCombo = WidgetFactory.createComboBox("scaleCombo", scaleValues);
+        //scaleCombo.setFont(new Font("dialog", Font.PLAIN, 10));
+        //scaleCombo.setPreferredSize(new Dimension(58, 20));
+        //scaleCombo.setLightWeightPopupEnabled(false);
+        //scaleCombo.setSelectedIndex(3);
 
         zoomInButton = new RolloverButton("/org/executequery/icons/ZoomIn16.png",
                 bundleString("zoomIn"));
