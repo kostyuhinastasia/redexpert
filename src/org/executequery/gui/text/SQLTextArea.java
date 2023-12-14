@@ -32,6 +32,10 @@ import javax.swing.text.*;
 import javax.swing.tree.TreePath;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
 import java.awt.print.Printable;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -330,6 +334,15 @@ public class SQLTextArea extends RSyntaxTextArea
             Element lineElem = map.getElement(row);
             int col = currentPosition - lineElem.getStartOffset();
             setCaretPosition(row+1,col+1);
+        });
+
+        addKeyListener(this);
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                if (getLineWrap())
+                    updateLineBorder();
+            }
         });
 
         addKeyListener(this);

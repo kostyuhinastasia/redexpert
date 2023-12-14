@@ -205,12 +205,12 @@ public class ErdToolBarPalette extends PanelToolBar
         addButton(canvasFgButton);
         addButton(canvasBgButton);
 
-        //String[] scaleValues = ErdViewerPanel.scaleValues;
-        //scaleCombo = WidgetFactory.createComboBox("scaleCombo", scaleValues);
-        //scaleCombo.setFont(new Font("dialog", Font.PLAIN, 10));
-        //scaleCombo.setPreferredSize(new Dimension(58, 20));
-        //scaleCombo.setLightWeightPopupEnabled(false);
-        //scaleCombo.setSelectedIndex(3);
+        String[] scaleValues = ErdViewerPanel.scaleValues;
+        scaleCombo = WidgetFactory.createComboBox("scaleCombo", scaleValues);
+        scaleCombo.setFont(new Font("dialog", Font.PLAIN, 10));
+        scaleCombo.setPreferredSize(new Dimension(58, 20));
+        scaleCombo.setLightWeightPopupEnabled(false);
+        scaleCombo.setSelectedIndex(3);
 
         zoomInButton = new RolloverButton("/org/executequery/icons/ZoomIn16.png",
                 bundleString("zoomIn"));
