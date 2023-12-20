@@ -921,6 +921,10 @@ public class ComparerDBPanel extends JPanel implements TabView {
     }
 
     public boolean isCanceled() {
+
+        if (progressDialog == null)
+            return false;
+
         return progressDialog.isCancel() || !isComparing;
     }
 

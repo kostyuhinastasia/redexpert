@@ -1,47 +1,35 @@
 package org.executequery.gui.browser.comparer;
 
 import org.executequery.databasemediators.DatabaseConnection;
-import org.executequery.databasemediators.spi.DefaultStatementExecutor;
 import org.executequery.databaseobjects.NamedObject;
-import org.executequery.gui.browser.ComparerDBPanel;
+import org.executequery.databaseobjects.impl.DefaultDatabaseHost;
+import org.executequery.gui.erd.ErdTable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 import static org.executequery.databaseobjects.NamedObject.TABLE;
 
 public class ErdComparer extends Comparer {
 
-    public ErdComparer() {
-        super();
+    public ErdComparer(DatabaseConnection connection) {
+        super(null, connection, new boolean[]{true, true, false, false}, false, false, false);
     }
 
-    /**
-     * this code will throw java.lang.ClassCastException,
-     * because parent.getAllComponentsVector() returns {@code Vector<ERDTable>}, but expected {@code Vector<NamedObjet>}
-     * <p> todo convert Vector<ERDTable> into Vector<DefaultDatabaseTable> or learn Comparer to work with ERDTable instances
-     *
-     * @param newTables
-     * @param connection
-     * @return generated update DB SQL-script
-     */
-    public String getCompareErdTables(Vector<NamedObject> newTables, DatabaseConnection connection) {
+    public String getCompareErdTables(Vector<ErdTable> newTables) {
 
-        masterConnection = new DefaultStatementExecutor(connection, true);
-        panel = new ComparerDBPanel();
+        List<NamedObject> newTablesList = newTables.stream().map(e -> e.toNamedObject(new DefaultDatabaseHost(compareConnection))).collect(Collectors.toList());
+        List<NamedObject> oldTablesList = getObjects(compareConnection, TABLE);
 
-        List<NamedObject> newTablesList = new ArrayList<>(newTables);
-        List<NamedObject> oldTablesList = getMasterObjectsList(TABLE);
-
-        List<NamedObject> createObjects = sortObjectsByDependency(createListObjects(TABLE, oldTablesList, newTablesList));
-        List<NamedObject> dropObjects = sortObjectsByDependency(dropListObjects(TABLE, oldTablesList, newTablesList));
-        Map<NamedObject, NamedObject> alterObjects = alterListObjects(TABLE, oldTablesList, newTablesList);
+        List<NamedObject> createObjects = sortObjectsByDependency(createListObjects(oldTablesList, newTablesList, TABLE, false));
+        List<NamedObject> dropObjects = sortObjectsByDependency(dropListObjects(oldTablesList, newTablesList, TABLE));
+        Map<NamedObject, NamedObject> alterObjects = alterListObjects(oldTablesList, newTablesList, TABLE);
 
         dropConstraints(true, false, true, true);
         addCreateObjectsToScript(createObjects, TABLE, false);
-        addDropObjectsToScript(dropObjects, TABLE, false);
+        addDropObjectsToScript(dropObjects, TABLE);
         addAlterObjectsToScript(alterObjects, TABLE, false);
         createConstraints();
         createComputedFields();

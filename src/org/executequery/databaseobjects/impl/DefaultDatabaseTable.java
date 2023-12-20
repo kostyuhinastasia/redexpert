@@ -52,13 +52,19 @@ public class DefaultDatabaseTable extends AbstractTableObject implements Databas
     List<ColumnConstraint> constraints;
     TokenizingFormatter formatter;
 
-    /** the table columns exported */
+    /**
+     * the table columns exported
+     */
     private List<DatabaseColumn> exportedColumns;
 
-    /** the table indexed columns */
+    /**
+     * the table indexed columns
+     */
     private List<DefaultDatabaseIndex> indexes;
 
-    /** the user modified SQL text for changes */
+    /**
+     * the user modified SQL text for changes
+     */
     private String modifiedSQLText;
     private transient TableDataChangeWorker tableDataChangeExecutor;
 
@@ -657,8 +663,10 @@ public class DefaultDatabaseTable extends AbstractTableObject implements Databas
     @Override
     public String getCompareCreateSQL() throws DataSourceException {
 
-        updateListCD();
-        updateListCC();
+        if (listCD == null)
+            updateListCD();
+        if (listCC == null)
+            updateListCC();
 
         if (Comparer.isComputedFieldsNeed())
             listCD.stream().filter(cd -> !MiscUtils.isNull(cd.getComputedBy())).forEach(cd -> cd.setComputedBy(null));
@@ -1195,5 +1203,8 @@ public class DefaultDatabaseTable extends AbstractTableObject implements Databas
         this.tablespace = tablespace;
     }
 
+    public void setListCD(ColumnData[] listCD) {
+        this.listCD = Arrays.asList(listCD);
+    }
 }
 

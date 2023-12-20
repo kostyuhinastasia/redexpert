@@ -83,9 +83,31 @@ public class Comparer {
                 createListObjects(
                         panel.isExtractMetadata() ? new ArrayList<>() : getObjects(masterConnection, type),
                         getObjects(compareConnection, type),
-                        type
+                        type,
+                        true
                 )
         );
+
+        addCreateObjectsToScript(createObjects, type, true);
+    }
+
+    public void dropObjects(int type) {
+
+        List<NamedObject> dropObjects = sortObjectsByDependency(
+                dropListObjects(getObjects(masterConnection, type), getObjects(compareConnection, type), type));
+
+        addDropObjectsToScript(dropObjects, type);
+    }
+
+    public void alterObjects(int type) {
+
+        Map<NamedObject, NamedObject> alterObjects = alterListObjects(
+                getObjects(masterConnection, type), getObjects(compareConnection, type), type);
+
+        addAlterObjectsToScript(alterObjects, type, true);
+    }
+
+    protected void addCreateObjectsToScript(List<NamedObject> createObjects, int type, boolean useHelper) {
 
         if (createObjects == null || createObjects.isEmpty())
             return;
@@ -98,46 +120,54 @@ public class Comparer {
         int headerIndex = script.size() - 1;
         boolean isHeaderNeeded = false;
 
-        LoadingObjectsHelper loadingObjectsHelper = new LoadingObjectsHelper(createObjects.size());
+        LoadingObjectsHelper loadingObjectsHelper = null;
+        if (useHelper)
+            loadingObjectsHelper = new LoadingObjectsHelper(createObjects.size());
 
-        panel.recreateProgressBar(
-                "GenerateCreateScript", NamedObject.META_TYPES[type],
-                createObjects.size()
-        );
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "GenerateCreateScript", NamedObject.META_TYPES[type],
+                    createObjects.size()
+            );
 
         for (NamedObject obj : createObjects) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             AbstractDatabaseObject databaseObject = (AbstractDatabaseObject) obj;
 
-            loadingObjectsHelper.preparingLoadForObjectAndCols(databaseObject);
+            if (loadingObjectsHelper != null)
+                loadingObjectsHelper.preparingLoadForObjectAndCols(databaseObject);
 
             String sqlScript = databaseObject.getCompareCreateSQL();
-            loadingObjectsHelper.postProcessingLoadForObjectAndCols(databaseObject);
+
+            if (loadingObjectsHelper != null)
+                loadingObjectsHelper.postProcessingLoadForObjectAndCols(databaseObject);
 
             if (!sqlScript.contains("Will be created with constraint defining")) {
                 script.add("\n/* " + obj.getName() + " */\n" + sqlScript);
-                panel.addTreeComponent(ComparerDBPanel.ComparerTreeNode.CREATE, type, obj.getName());
-                panel.getComparedObjectList().add(new ComparedObject(type, obj.getName(), sqlScript, null));
-                panel.addToLog("\t" + obj.getName());
+                if (panel != null) {
+                    panel.addTreeComponent(ComparerDBPanel.ComparerTreeNode.CREATE, type, obj.getName());
+                    panel.getComparedObjectList().add(new ComparedObject(type, obj.getName(), sqlScript, null));
+                    panel.addToLog("\t" + obj.getName());
+                }
                 isHeaderNeeded = true;
                 counter[0]++;
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
-        loadingObjectsHelper.releaseResources();
+
+        if (loadingObjectsHelper != null)
+            loadingObjectsHelper.releaseResources();
 
         if (!isHeaderNeeded)
             script.remove(headerIndex);
     }
 
-    public void dropObjects(int type) {
-
-        List<NamedObject> dropObjects = sortObjectsByDependency(
-                dropListObjects(getObjects(masterConnection, type), getObjects(compareConnection, type), type));
+    protected void addDropObjectsToScript(List<NamedObject> dropObjects, int type) {
 
         if (dropObjects == null || dropObjects.isEmpty())
             return;
@@ -150,14 +180,15 @@ public class Comparer {
         int headerIndex = script.size() - 1;
         boolean isHeaderNeeded = false;
 
-        panel.recreateProgressBar(
-                "GenerateDropScript", NamedObject.META_TYPES[type],
-                dropObjects.size()
-        );
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "GenerateDropScript", NamedObject.META_TYPES[type],
+                    dropObjects.size()
+            );
 
         for (NamedObject obj : dropObjects) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             String sqlScript = ((type != INDEX) ?
@@ -166,24 +197,24 @@ public class Comparer {
 
             if (!sqlScript.contains("Remove with table constraint")) {
                 script.add("\n/* " + obj.getName() + " */\n" + sqlScript);
-                panel.addTreeComponent(ComparerDBPanel.ComparerTreeNode.DROP, type, obj.getName());
-                panel.getComparedObjectList().add(new ComparedObject(type, obj.getName(), null, ((AbstractDatabaseObject) obj).getCreateSQLText()));
-                panel.addToLog("\t" + obj.getName());
+                if (panel != null) {
+                    panel.addTreeComponent(ComparerDBPanel.ComparerTreeNode.DROP, type, obj.getName());
+                    panel.getComparedObjectList().add(new ComparedObject(type, obj.getName(), null, ((AbstractDatabaseObject) obj).getCreateSQLText()));
+                    panel.addToLog("\t" + obj.getName());
+                }
                 isHeaderNeeded = true;
                 counter[1]++;
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
 
         if (!isHeaderNeeded)
             script.remove(headerIndex);
     }
 
-    public void alterObjects(int type) {
-
-        Map<NamedObject, NamedObject> alterObjects = alterListObjects(
-                getObjects(masterConnection, type), getObjects(compareConnection, type), type);
+    protected void addAlterObjectsToScript(Map<NamedObject, NamedObject> alterObjects, int type, boolean useHelper) {
 
         if (alterObjects.isEmpty())
             return;
@@ -199,43 +230,60 @@ public class Comparer {
         int headerIndex = script.size() - 1;
         boolean isHeaderNeeded = false;
 
-        LoadingObjectsHelper loadingObjectsHelperMaster = new LoadingObjectsHelper(alterObjects.size());
-        LoadingObjectsHelper loadingObjectsHelperCompare = new LoadingObjectsHelper(alterObjects.size());
+        LoadingObjectsHelper loadingObjectsHelperMaster = null;
+        LoadingObjectsHelper loadingObjectsHelperCompare = null;
 
-        panel.recreateProgressBar(
-                "GenerateAlterScript", NamedObject.META_TYPES[type],
-                alterObjects.keySet().size()
-        );
+        if (useHelper) {
+            loadingObjectsHelperMaster = new LoadingObjectsHelper(alterObjects.size());
+            loadingObjectsHelperCompare = new LoadingObjectsHelper(alterObjects.size());
+        }
+
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "GenerateAlterScript", NamedObject.META_TYPES[type],
+                    alterObjects.keySet().size()
+            );
 
         for (NamedObject obj : alterObjects.keySet()) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             AbstractDatabaseObject masterObject = (AbstractDatabaseObject) obj;
 
             AbstractDatabaseObject compareObject = (AbstractDatabaseObject) alterObjects.get(obj);
 
-            loadingObjectsHelperMaster.preparingLoadForObjectAndCols(masterObject);
-            loadingObjectsHelperCompare.preparingLoadForObjectAndCols(compareObject);
+            if (useHelper) {
+                loadingObjectsHelperMaster.preparingLoadForObjectAndCols(masterObject);
+                loadingObjectsHelperCompare.preparingLoadForObjectAndCols(compareObject);
+            }
 
             String sqlScript = masterObject.getCompareAlterSQL(compareObject);
-            loadingObjectsHelperMaster.postProcessingLoadForObjectAndCols(masterObject);
-            loadingObjectsHelperCompare.postProcessingLoadForObjectAndCols(compareObject);
+
+            if (useHelper) {
+                loadingObjectsHelperMaster.postProcessingLoadForObjectAndCols(masterObject);
+                loadingObjectsHelperCompare.postProcessingLoadForObjectAndCols(compareObject);
+            }
 
             if (!sqlScript.contains("there are no changes")) {
                 script.add("\n/* " + obj.getName() + " */\n" + sqlScript);
-                panel.addTreeComponent(ComparerDBPanel.ComparerTreeNode.ALTER, type, obj.getName());
-                panel.getComparedObjectList().add(new ComparedObject(type, obj.getName(), compareObject.getCreateSQLText(), masterObject.getCreateSQLText()));
-                panel.addToLog("\t" + obj.getName());
+                if (panel != null) {
+                    panel.addTreeComponent(ComparerDBPanel.ComparerTreeNode.ALTER, type, obj.getName());
+                    panel.getComparedObjectList().add(new ComparedObject(type, obj.getName(), compareObject.getCreateSQLText(), masterObject.getCreateSQLText()));
+                    panel.addToLog("\t" + obj.getName());
+                }
                 isHeaderNeeded = true;
                 counter[2]++;
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
-        loadingObjectsHelperMaster.releaseResources();
-        loadingObjectsHelperCompare.releaseResources();
+
+        if (useHelper) {
+            loadingObjectsHelperMaster.releaseResources();
+            loadingObjectsHelperCompare.releaseResources();
+        }
 
         if (!alterObjects.isEmpty()) {
             AbstractDatabaseObject masterObject = (AbstractDatabaseObject) alterObjects.keySet().toArray()[0];
@@ -252,10 +300,11 @@ public class Comparer {
         if (constraintsToCreate.isEmpty())
             return;
 
-        panel.recreateProgressBar(
-                "GenerateCreateConstraintScript", null,
-                constraintsToCreate.size() * 4
-        );
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "GenerateCreateConstraintScript", null,
+                    constraintsToCreate.size() * 4
+            );
 
         script.add("\n/* ----- PRIMARY KEYs defining ----- */\n");
         int headerIndex = script.size() - 1;
@@ -263,15 +312,16 @@ public class Comparer {
 
         for (org.executequery.gui.browser.ColumnConstraint obj : constraintsToCreate) {
 
-            if (panel.isCanceled())
-                break;
+            if (panel != null)
+                if (panel.isCanceled())
+                    break;
 
             if (obj.getType() == NamedObject.PRIMARY_KEY) {
                 addConstraintToScript(obj);
                 isHeaderNeeded = true;
             }
-
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
 
         if (!isHeaderNeeded)
@@ -283,15 +333,17 @@ public class Comparer {
 
         for (org.executequery.gui.browser.ColumnConstraint obj : constraintsToCreate) {
 
-            if (panel.isCanceled())
-                break;
+            if (panel != null)
+                if (panel.isCanceled())
+                    break;
 
             if (obj.getType() == NamedObject.UNIQUE_KEY) {
                 addConstraintToScript(obj);
                 isHeaderNeeded = true;
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
 
         if (!isHeaderNeeded)
@@ -303,15 +355,17 @@ public class Comparer {
 
         for (org.executequery.gui.browser.ColumnConstraint obj : constraintsToCreate) {
 
-            if (panel.isCanceled())
-                break;
+            if (panel != null)
+                if (panel.isCanceled())
+                    break;
 
             if (obj.getType() == NamedObject.FOREIGN_KEY) {
                 addConstraintToScript(obj);
                 isHeaderNeeded = true;
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
 
         if (!isHeaderNeeded)
@@ -323,15 +377,17 @@ public class Comparer {
 
         for (org.executequery.gui.browser.ColumnConstraint obj : constraintsToCreate) {
 
-            if (panel.isCanceled())
-                break;
+            if (panel != null)
+                if (panel.isCanceled())
+                    break;
 
             if (obj.getType() == NamedObject.CHECK_KEY) {
                 addConstraintToScript(obj);
                 isHeaderNeeded = true;
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
 
         if (!isHeaderNeeded)
@@ -501,21 +557,25 @@ public class Comparer {
         script.add("\nALTER TABLE " + obj.getTable() + "\n\tDROP CONSTRAINT " + obj.getName() + ";\n");
     }
 
-    private List<NamedObject> createListObjects(
-            List<NamedObject> masterObjects, List<NamedObject> compareObjects, int type) {
+    protected List<NamedObject> createListObjects(
+            List<NamedObject> masterObjects, List<NamedObject> compareObjects, int type, boolean useHelper) {
 
         List<NamedObject> createObjects = new ArrayList<>();
         List<String> masterObjectsNames = masterObjects.stream().map(Named::getName).collect(Collectors.toList());
-        LoadingObjectsHelper loadingObjectsHelper = new LoadingObjectsHelper(compareObjects.size());
 
-        panel.recreateProgressBar(
-                "ExtractingForCreate", NamedObject.META_TYPES[type],
-                compareObjects.size()
-        );
+        LoadingObjectsHelper loadingObjectsHelper = null;
+        if (useHelper)
+            loadingObjectsHelper = new LoadingObjectsHelper(compareObjects.size());
+
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "ExtractingForCreate", NamedObject.META_TYPES[type],
+                    compareObjects.size()
+            );
 
         for (NamedObject databaseObject : compareObjects) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             if (!masterObjectsNames.contains(databaseObject.getName())) {
@@ -525,68 +585,76 @@ public class Comparer {
                 if (databaseObject.getType() == NamedObject.TABLE || databaseObject.getType() == NamedObject.GLOBAL_TEMPORARY) {
                     AbstractDatabaseObject abstractDatabaseObject = (AbstractDatabaseObject) databaseObject;
 
-                    loadingObjectsHelper.preparingLoadForObjectAndCols(abstractDatabaseObject);
+                    if (loadingObjectsHelper != null)
+                        loadingObjectsHelper.preparingLoadForObjectAndCols(abstractDatabaseObject);
 
                     if (!Arrays.equals(TABLE_CONSTRAINTS_NEED, new boolean[]{false, false, false, false}))
                         createListConstraints(databaseObject);
                     if (COMPUTED_FIELDS_NEED)
                         createListComputedFields(databaseObject);
 
-                    loadingObjectsHelper.postProcessingLoadForObjectAndCols(abstractDatabaseObject);
+                    if (loadingObjectsHelper != null)
+                        loadingObjectsHelper.postProcessingLoadForObjectAndCols(abstractDatabaseObject);
 
                 }
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
-        loadingObjectsHelper.releaseResources();
+
+        if (loadingObjectsHelper != null)
+            loadingObjectsHelper.releaseResources();
 
         return createObjects;
     }
 
-    private List<NamedObject> dropListObjects(
+    protected List<NamedObject> dropListObjects(
             List<NamedObject> masterObjects, List<NamedObject> compareObjects, int type) {
 
         List<NamedObject> dropObjects = new ArrayList<>();
         List<String> compareObjectsNames = compareObjects.stream().map(Named::getName).collect(Collectors.toList());
 
-        panel.recreateProgressBar(
-                "ExtractingForDrop", NamedObject.META_TYPES[type],
-                masterObjects.size()
-        );
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "ExtractingForDrop", NamedObject.META_TYPES[type],
+                    masterObjects.size()
+            );
 
         for (NamedObject databaseObject : masterObjects) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             if (!compareObjectsNames.contains(databaseObject.getName()))
                 dropObjects.add(databaseObject);
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
 
         return dropObjects;
     }
 
-    private Map<NamedObject, NamedObject> alterListObjects(
+    protected Map<NamedObject, NamedObject> alterListObjects(
             List<NamedObject> masterObjects, List<NamedObject> compareObjects, int type) {
 
         Map<NamedObject, NamedObject> alterObjects = new HashMap<>();
 
-        panel.recreateProgressBar(
-                "ExtractingForAlter", NamedObject.META_TYPES[type],
-                masterObjects.size() * compareObjects.size()
-        );
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "ExtractingForAlter", NamedObject.META_TYPES[type],
+                    masterObjects.size() * compareObjects.size()
+            );
 
         for (NamedObject compareObject : compareObjects) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             for (NamedObject masterObject : masterObjects) {
 
-                if (panel.isCanceled())
+                if (panel != null && panel.isCanceled())
                     break;
 
                 if (Objects.equals(masterObject.getName(), compareObject.getName())) {
@@ -594,7 +662,8 @@ public class Comparer {
                     break;
                 }
 
-                panel.incrementProgressBarValue();
+                if (panel != null)
+                    panel.incrementProgressBarValue();
             }
         }
 
@@ -621,21 +690,22 @@ public class Comparer {
 
     private void dropListConstraints(int type) {
 
-        if ((type != TABLE && type != GLOBAL_TEMPORARY) || panel.isCanceled())
+        if ((type != TABLE && type != GLOBAL_TEMPORARY) || (panel != null && panel.isCanceled()))
             return;
 
         List<NamedObject> masterConnectionObjectsList = ConnectionsTreePanel.getPanelFromBrowser().
                 getDefaultDatabaseHostFromConnection(masterConnection).
                 getDatabaseObjectsForMetaTag(NamedObject.META_TYPES[type]);
 
-        panel.recreateProgressBar(
-                "ExtractingConstraintsForDrop", null,
-                masterConnectionObjectsList.size()
-        );
+        if (panel != null)
+            panel.recreateProgressBar(
+                    "ExtractingConstraintsForDrop", null,
+                    masterConnectionObjectsList.size()
+            );
 
         for (NamedObject databaseObject : masterConnectionObjectsList) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             if (ConnectionsTreePanel.getNamedObjectFromHost(
@@ -643,21 +713,22 @@ public class Comparer {
 
                 for (ColumnConstraint cc : ((DefaultDatabaseTable) databaseObject).getConstraints()) {
 
-                    if (panel.isCanceled())
+                    if (panel != null && panel.isCanceled())
                         break;
 
                     constraintsToDrop.add(new org.executequery.gui.browser.ColumnConstraint(false, cc));
                 }
             }
 
-            panel.incrementProgressBarValue();
+            if (panel != null)
+                panel.incrementProgressBarValue();
         }
 
     }
 
     private void alterListConstraints(int type) {
 
-        if ((type != TABLE && type != GLOBAL_TEMPORARY) || panel.isCanceled())
+        if ((type != TABLE && type != GLOBAL_TEMPORARY) || (panel != null && panel.isCanceled()))
             return;
 
         List<NamedObject> masterConnectionObjectsList = ConnectionsTreePanel.getPanelFromBrowser().
@@ -669,21 +740,23 @@ public class Comparer {
 
         List<ColumnConstraint> droppedConstraints = new ArrayList<>();
 
-        panel.recreateProgressBar(
-                "ExtractingConstraintsForAlter", null,
-                masterConnectionObjectsList.size() * masterConnectionObjectsList.size()
-        );
+        if (panel != null)
+
+            panel.recreateProgressBar(
+                    "ExtractingConstraintsForAlter", null,
+                    masterConnectionObjectsList.size() * masterConnectionObjectsList.size()
+            );
         LoadingObjectsHelper loadingObjectsHelperMaster = new LoadingObjectsHelper(masterConnectionObjectsList.size());
         LoadingObjectsHelper loadingObjectsHelperCompare = new LoadingObjectsHelper(compareConnectionObjectsList.size());
         for (NamedObject compareObject : compareConnectionObjectsList) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
             AbstractDatabaseObject compareAbstractObject = (AbstractDatabaseObject) compareObject;
             loadingObjectsHelperCompare.preparingLoadForObjectCols(compareAbstractObject);
             for (NamedObject masterObject : masterConnectionObjectsList) {
 
-                if (panel.isCanceled())
+                if (panel != null && panel.isCanceled())
                     break;
                 AbstractDatabaseObject masterAbstractObject = (AbstractDatabaseObject) masterObject;
                 loadingObjectsHelperMaster.preparingLoadForObjectCols(masterAbstractObject);
@@ -692,7 +765,9 @@ public class Comparer {
                         checkConstraintsPair(masterObject, compareObject, droppedConstraints);
                 loadingObjectsHelperMaster.postProcessingLoadForObjectForCols(masterAbstractObject);
 
-                panel.incrementProgressBarValue();
+                if (panel != null)
+
+                    panel.incrementProgressBarValue();
             }
             loadingObjectsHelperCompare.postProcessingLoadForObjectForCols(compareAbstractObject);
         }
@@ -701,13 +776,13 @@ public class Comparer {
 
         // --- check for temporary DROP dependent CONSTRAINT ---
 
-        if (droppedConstraints.isEmpty() || panel.isCanceled())
+        if (droppedConstraints.isEmpty() || (panel != null && panel.isCanceled()))
             return;
 
         List<String> droppedConstraintsColumns = new ArrayList<>();
         for (ColumnConstraint cc : droppedConstraints) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             if ((cc.isPrimaryKey() || cc.isUniqueKey()) && cc.getColumnDisplayList() != null)
@@ -720,12 +795,12 @@ public class Comparer {
 
         for (NamedObject masterObject : masterConnectionObjectsList) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
             loadingObjectsHelper.preparingLoadForObjectAndCols((AbstractDatabaseObject) masterObject);
             for (ColumnConstraint masterCC : ((DefaultDatabaseTable) masterObject).getConstraints()) {
 
-                if (panel.isCanceled())
+                if (panel != null && panel.isCanceled())
                     break;
 
                 if (droppedConstraints.contains(masterCC) || !masterCC.isForeignKey())
@@ -753,7 +828,7 @@ public class Comparer {
         //check for DROP excess CONSTRAINT
         for (ColumnConstraint masterCC : masterConstraints) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             if ((masterCC.getType() == PRIMARY_KEY && !TABLE_CONSTRAINTS_NEED[0]) ||
@@ -774,7 +849,7 @@ public class Comparer {
         //check for temporary DROP CONSTRAINT
         for (ColumnConstraint masterCC : masterConstraints) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             if (droppedConstraints.contains(masterCC))
@@ -784,7 +859,7 @@ public class Comparer {
 
             for (ColumnConstraint comparingCC : compareConstraints) {
 
-                if (panel.isCanceled())
+                if (panel != null && panel.isCanceled())
                     break;
 
                 if (Objects.equals(masterCC.getName(), comparingCC.getName())) {
@@ -813,7 +888,7 @@ public class Comparer {
 
             for (DatabaseColumn masterC : masterColumns) {
 
-                if (panel.isCanceled())
+                if (panel != null && panel.isCanceled())
                     break;
 
                 if (!masterConstraintColumns.contains(masterC.getName()))
@@ -823,7 +898,7 @@ public class Comparer {
 
                 for (DatabaseColumn comparingC : compareColumns) {
 
-                    if (panel.isCanceled())
+                    if (panel != null && panel.isCanceled())
                         break;
 
                     if (Objects.equals(masterC.getName(), comparingC.getName())) {
@@ -853,7 +928,7 @@ public class Comparer {
         //check for ADD new CONSTRAINT
         for (ColumnConstraint comparingCC : compareConstraints) {
 
-            if (panel.isCanceled())
+            if (panel != null && panel.isCanceled())
                 break;
 
             if ((comparingCC.getType() == PRIMARY_KEY && !TABLE_CONSTRAINTS_NEED[0]) ||
@@ -890,7 +965,7 @@ public class Comparer {
         }
     }
 
-    private List<NamedObject> sortObjectsByDependency(List<NamedObject> objectsList) {
+    protected List<NamedObject> sortObjectsByDependency(List<NamedObject> objectsList) {
 
         if (objectsList.isEmpty())
             return null;
@@ -908,10 +983,11 @@ public class Comparer {
 
             PreparedStatement selectDependenciesStatement = executor.getPreparedStatement(templateQuery);
 
-            panel.recreateProgressBar(
-                    "SearchingForDependencies", null,
-                    objectMap.keySet().size()
-            );
+            if (panel != null)
+                panel.recreateProgressBar(
+                        "SearchingForDependencies", null,
+                        objectMap.keySet().size()
+                );
 
             for (String objectName : objectMap.keySet()) {
                 NamedObject tempObject = objectMap.get(objectName);
@@ -937,7 +1013,8 @@ public class Comparer {
                     }
                 }
 
-                panel.incrementProgressBarValue();
+                if (panel != null)
+                    panel.incrementProgressBarValue();
             }
 
             executor.closeConnection();
@@ -958,7 +1035,8 @@ public class Comparer {
         List<NamedObject> stubsList = createListObjects(
                 panel.isExtractMetadata() ? new ArrayList<>() : getObjects(masterConnection, type),
                 getObjects(compareConnection, type),
-                type
+                type,
+                true
         );
 
         if (stubsList.isEmpty())
@@ -982,7 +1060,7 @@ public class Comparer {
 
     }
 
-    private List<NamedObject> getObjects(DatabaseConnection connection, int type) {
+    protected List<NamedObject> getObjects(DatabaseConnection connection, int type) {
         return ConnectionsTreePanel.getPanelFromBrowser().
                 getDefaultDatabaseHostFromConnection(connection).
                 getDatabaseObjectsForMetaTag(NamedObject.META_TYPES[type]);

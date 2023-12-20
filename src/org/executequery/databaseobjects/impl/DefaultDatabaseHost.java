@@ -1007,16 +1007,16 @@ public class DefaultDatabaseHost extends AbstractNamedObject
         String GET = "get";
 
 
-        try {
-            properties.put("Sever version", dmd.getDatabaseProductName());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        try {
-            properties.put("ODS version", db.getOdsVersion(dmd.getInner()));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        //try {
+        //    properties.put("Sever version", dmd.getDatabaseProductName());
+        //} catch (SQLException e) {
+        //    e.printStackTrace();
+        //}
+        //try {
+        //    properties.put("ODS version", db.getOdsVersion(dmd.getInner()));
+        //} catch (Exception e) {
+        //    e.printStackTrace();
+        //}
 
         for (int i = 0; i < metaMethods.length; i++) {
 

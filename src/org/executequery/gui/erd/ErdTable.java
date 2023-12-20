@@ -21,6 +21,10 @@
 package org.executequery.gui.erd;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.executequery.databasemediators.DatabaseConnection;
+import org.executequery.databaseobjects.NamedObject;
+import org.executequery.databaseobjects.impl.DefaultDatabaseHost;
+import org.executequery.databaseobjects.impl.DefaultDatabaseTable;
 import org.executequery.gui.browser.ColumnData;
 import org.underworldlabs.swing.plaf.UIUtils;
 
@@ -865,6 +869,15 @@ public class ErdTable extends ErdMoveableComponent
         verticalRightJoins = null;
         horizontalTopJoins = null;
         horizontalBottomJoins = null;
+    }
+
+    public NamedObject toNamedObject(DefaultDatabaseHost host) {
+
+        DefaultDatabaseTable databaseTable = new DefaultDatabaseTable(host, "TABLE");
+        databaseTable.setName(tableName);
+        databaseTable.setListCD(columns);
+
+        return databaseTable;
     }
 
     static class ErdTableConnectionPoint {
