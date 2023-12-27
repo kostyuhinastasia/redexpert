@@ -112,7 +112,6 @@ public class GenerateErdPanel extends JPanel
             } else {
                 new ErdGenerateProgressDialog(selectionPanel.getSelectedValues(),
                         parentErdPanel, connection, selectionPanel.getSchema());
-
                 cleanup();
                 SwingUtilities.getWindowAncestor(this).dispose();
             }

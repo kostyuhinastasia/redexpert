@@ -94,29 +94,26 @@ public class ErdToolBarPalette extends PanelToolBar
         try {
             jbInit();
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(System.out);
         }
     }
 
     private void jbInit() {
 
-        //connectionsComboBox = WidgetFactory.createComboBox();
-        //connectionModel = new DynamicComboBoxModel(new Vector<>(ConnectionManager.getActiveConnections()));
-        //connectionsComboBox.setModel(connectionModel);
-        //EventMediator.registerListener(this);
-
-        //combosGroup = new TableSelectionCombosGroup(connectionsComboBox);
+        connectionModel = new DynamicComboBoxModel(new Vector<>(ConnectionManager.getActiveConnections()));
+        connectionsComboBox = WidgetFactory.createComboBox("connectionsComboBox", connectionModel);
+        EventMediator.registerListener(this);
 
         List<DatabaseConnection> connections = ((DatabaseConnectionRepository) Objects.requireNonNull(
                 RepositoryCache.load(DatabaseConnectionRepository.REPOSITORY_ID)
         )).findAll();
 
-        //connectionsComboBox = WidgetFactory.createComboBox();
+        //connectionsComboBox = WidgetFactory.createComboBox("connectionsComboBox");
         for (DatabaseConnection dc : connections)
             connectionsComboBox.addItem(dc);
 
         String[] scaleValues = ErdViewerPanel.scaleValues;
-        //scaleCombo = WidgetFactory.createComboBox(scaleValues);
+        scaleCombo = WidgetFactory.createComboBox("scaleCombo", ErdViewerPanel.scaleValues);
         scaleCombo.setFont(new Font("dialog", Font.PLAIN, 10));
         scaleCombo.setPreferredSize(new Dimension(58, 20));
         scaleCombo.setLightWeightPopupEnabled(false);
@@ -205,7 +202,7 @@ public class ErdToolBarPalette extends PanelToolBar
         addButton(canvasFgButton);
         addButton(canvasBgButton);
 
-        String[] scaleValues = ErdViewerPanel.scaleValues;
+        //String[] scaleValues = ErdViewerPanel.scaleValues;
         scaleCombo = WidgetFactory.createComboBox("scaleCombo", scaleValues);
         scaleCombo.setFont(new Font("dialog", Font.PLAIN, 10));
         scaleCombo.setPreferredSize(new Dimension(58, 20));
@@ -437,7 +434,7 @@ public class ErdToolBarPalette extends PanelToolBar
 
     private void pushToDatabase() {
 
-        String sqlScript = new ErdComparer().getCompareErdTables(parent.getAllComponentsVector(), getSelectedConnection());
+        String sqlScript = new ErdComparer(getSelectedConnection()).getCompareErdTables(parent.getAllComponentsVector());
         if (sqlScript == null || sqlScript.isEmpty()) {
             GUIUtilities.displayWarningMessage(bundleString("NothingToExecute"));
             return;
@@ -448,34 +445,6 @@ public class ErdToolBarPalette extends PanelToolBar
         GUIUtilities.addCentralPane(
                 QueryEditor.TITLE, QueryEditor.FRAME_ICON,
                 queryEditor, null, true);
-
-        /*
-        // or execute in the background using something similar:
-
-        org.underworldlabs.swing.util.SwingWorker worker = new SwingWorker("ERDChangesApply", this) {
-
-            @Override
-            public Object construct() {
-
-                DefaultStatementExecutor executor = new DefaultStatementExecutor();
-                executor.setDatabaseConnection(getSelectedConnection());
-                executor.setKeepAlive(true);
-                executor.setCommitMode(false);
-
-                try {
-                    executor.execute(sqlScript, true);
-                    executor.getConnection().commit();
-                    executor.releaseResources();
-
-                } catch (SQLException e) {
-                    Log.error(e.getMessage());
-                }
-
-                return null;
-            }
-        };
-        worker.start();
-        */
 
     }
 

@@ -1206,5 +1206,10 @@ public class DefaultDatabaseTable extends AbstractTableObject implements Databas
     public void setListCD(ColumnData[] listCD) {
         this.listCD = Arrays.asList(listCD);
     }
+
+    public void setListCC(org.executequery.gui.browser.ColumnConstraint[] listCC) {
+        this.listCC = Arrays.asList(listCC);
+    }
+
 }
 

@@ -25,6 +25,7 @@ import org.executequery.databasemediators.DatabaseConnection;
 import org.executequery.databaseobjects.NamedObject;
 import org.executequery.databaseobjects.impl.DefaultDatabaseHost;
 import org.executequery.databaseobjects.impl.DefaultDatabaseTable;
+import org.executequery.gui.browser.ColumnConstraint;
 import org.executequery.gui.browser.ColumnData;
 import org.underworldlabs.swing.plaf.UIUtils;
 
@@ -32,7 +33,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
 
 /**
@@ -63,6 +66,14 @@ public class ErdTable extends ErdMoveableComponent
      * The ALTER TABLE script for a definition change
      */
     private String alterTableScript;
+
+    /**
+     * The ALTER TABLE script for a constraint change
+     */
+    public String getAddConstraintScript() {
+        return addConstraintScript;
+    }
+
     /**
      * The ALTER TABLE script for a constraint change
      */
@@ -876,8 +887,21 @@ public class ErdTable extends ErdMoveableComponent
         DefaultDatabaseTable databaseTable = new DefaultDatabaseTable(host, "TABLE");
         databaseTable.setName(tableName);
         databaseTable.setListCD(columns);
+        databaseTable.setListCC(getConstraints());
 
         return databaseTable;
+    }
+
+    public ColumnConstraint[] getConstraints() {
+
+        List<ColumnConstraint> cc = new ArrayList<>();
+        for (ColumnData cd : columns) {
+            Vector ccv = cd.getColumnConstraintsVector();
+            if (ccv != null)
+                cc.addAll(ccv);
+        }
+
+        return cc.toArray(new ColumnConstraint[cc.size()]);
     }
 
     static class ErdTableConnectionPoint {
